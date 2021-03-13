@@ -11,6 +11,18 @@ const locale = {
       'S', 'S-SV', 'SV', 'V-SV', 'V', 'V-NV', 'NV', 'N-NV', 'N'
     ]
   },
+  de: {
+    tempHi: "Höchsttemperatur",
+    tempLo: "Tiefsttemperatur",
+    precip: "Niederschlag",
+    uPress: "hPa",
+    uSpeed: "m/s",
+    uPrecip: "mm",
+    cardinalDirections: [
+      'N', 'N-NO', 'NO', 'O-NO', 'O', 'O-SO', 'SO', 'S-SO',
+      'S', 'S-SW', 'SW', 'W-SW', 'W', 'W-NW', 'NW', 'N-NW', 'N'
+    ]
+  },
   en: {
     tempHi: "Temperature",
     tempLo: "Temperature night",
@@ -21,6 +33,18 @@ const locale = {
     cardinalDirections: [
       'N', 'N-NE', 'NE', 'E-NE', 'E', 'E-SE', 'SE', 'S-SE',
       'S', 'S-SW', 'SW', 'W-SW', 'W', 'W-NW', 'NW', 'N-NW', 'N'
+    ]
+  },
+  es: {
+    tempHi: "Temperatura máxima",
+    tempLo: "Temperatura mínima",
+    precip: "Precipitations",
+    uPress: "hPa",
+    uSpeed: "m/s",
+    uPrecip: "mm",
+    cardinalDirections: [
+      'N', 'N-NE', 'NE', 'E-NE', 'E', 'E-SE', 'SE', 'S-SE',
+      'S', 'S-SO', 'SO', 'O-SO', 'O', 'O-NO', 'NO', 'N-NO', 'N'
     ]
   },
   fr: {
@@ -94,6 +118,7 @@ class WeatherCardChart extends Polymer.Element {
         .main ha-icon {
           --iron-icon-height: 74px;
           --iron-icon-width: 74px;
+          --mdc-icon-size: 74px;
           margin-right: 20px;
         }
         .main div {
@@ -143,11 +168,17 @@ class WeatherCardChart extends Polymer.Element {
               </template>
             </div>
             <div>
-              <ha-icon icon="hass:[[getWindDirIcon(windBearing)]]"></ha-icon> [[getWindDir(windBearing)]]<br>
-              <ha-icon icon="hass:weather-windy"></ha-icon> [[computeWind(weatherObj.attributes.wind_speed)]] [[ll('uSpeed')]]
+              <ha-icon icon="[[getWindDirIcon(windBearing)]]"></ha-icon> [[getWindDir(windBearing)]]<br>
+              <ha-icon icon="hass:weather-windy"></ha-icon>
+              <template is="dom-if" if="[[windObj]]">
+                [[roundNumber(windObj.state)]] [[ll('uSpeed')]]                
+              </template>
+              <template is="dom-if" if="[[!windObj]]">
+                [[computeWind(weatherObj.attributes.wind_speed)]] [[ll('uSpeed')]]
+              </template>
             </div>
           </div>
-          <ha-chart-base data="[[ChartData]]"></ha-chart-base>
+          <ha-chart-base hass="[[_hass]]" data="[[ChartData]]"></ha-chart-base>
           <div class="conditions">
             <template is="dom-repeat" items="[[forecast]]">
               <div>
@@ -165,6 +196,7 @@ class WeatherCardChart extends Polymer.Element {
       config: Object,
       sunObj: Object,
       tempObj: Object,
+      windObj: Object,
       mode: String,
       weatherObj: {
         type: Object,
@@ -183,7 +215,7 @@ class WeatherCardChart extends Polymer.Element {
       'hail': 'hass:weather-hail',
       'lightning': 'hass:weather-lightning',
       'lightning-rainy': 'hass:weather-lightning-rainy',
-      'partlycloudy': 'hass:weather-partlycloudy',
+      'partlycloudy': 'hass:weather-partly-cloudy',
       'pouring': 'hass:weather-pouring',
       'rainy': 'hass:weather-rainy',
       'snowy': 'hass:weather-snowy',
@@ -204,6 +236,7 @@ class WeatherCardChart extends Polymer.Element {
     this.title = config.title;
     this.weatherObj = config.weather;
     this.tempObj = config.temp;
+    this.windObj = config.wind;
     this.mode = config.mode;
     if (!config.weather) {
       throw new Error('Please define "weather" entity in the card config');
@@ -216,6 +249,7 @@ class WeatherCardChart extends Polymer.Element {
     this.weatherObj = this.config.weather in hass.states ? hass.states[this.config.weather] : null;
     this.sunObj = 'sun.sun' in hass.states ? hass.states['sun.sun'] : null;
     this.tempObj = this.config.temp in hass.states ? hass.states[this.config.temp] : null;
+    this.windObj = this.config.wind in hass.states ? hass.states[this.config.wind] : null;
     this.forecast = this.weatherObj.attributes.forecast.slice(0,9);
     this.windBearing = this.weatherObj.attributes.wind_bearing;
   }
